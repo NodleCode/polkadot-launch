@@ -1,3 +1,4 @@
+import "@polkadot/api-augment";
 import { Keyring } from "@polkadot/api";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { encodeAddress } from "@polkadot/util-crypto";
@@ -17,6 +18,14 @@ function getAuthorityKeys(chainSpec: ChainSpec) {
 	if (runtimeConfig && runtimeConfig.session) {
 		return runtimeConfig.session.keys;
 	}
+
+	// For retro-compatibility with substrate pre Polkadot 0.9.5
+	if (runtimeConfig && runtimeConfig.palletSession) {
+		return runtimeConfig.palletSession.keys;
+	}
+
+	console.error("  ⚠ session not found in runtimeConfig");
+	process.exit(1);
 }
 
 // Remove all existing keys from `session.keys`
@@ -26,7 +35,7 @@ export function clearAuthorities(spec: string) {
 	try {
 		chainSpec = JSON.parse(rawdata);
 	} catch {
-		console.error("failed to parse the chain spec");
+		console.error("  ⚠ failed to parse the chain spec");
 		process.exit(1);
 	}
 
@@ -93,9 +102,15 @@ export async function addGenesisParachain(
 	const runtimeConfig =
 		chainSpec.genesis.runtime.runtime_genesis_config ||
 		chainSpec.genesis.runtime;
-	if (runtimeConfig.parachainsParas) {
-		let paras = runtimeConfig.parachainsParas.paras;
-
+	let paras = undefined;
+	if (runtimeConfig.paras) {
+		paras = runtimeConfig.paras.paras;
+	}
+	// For retro-compatibility with substrate pre Polkadot 0.9.5
+	else if (runtimeConfig.parachainsParas) {
+		paras = runtimeConfig.parachainsParas.paras;
+	}
+	if (paras) {
 		let new_para = [
 			parseInt(para_id),
 			{
@@ -108,8 +123,12 @@ export async function addGenesisParachain(
 		paras.push(new_para);
 
 		let data = JSON.stringify(chainSpec, null, 2);
+
 		fs.writeFileSync(spec, data);
 		console.log(`  ✓ Added Genesis Parachain ${para_id}`);
+	} else {
+		console.error("  ⚠ paras not found in runtimeConfig");
+		process.exit(1);
 	}
 }
 
@@ -133,17 +152,27 @@ export async function addGenesisHrmpChannel(
 		chainSpec.genesis.runtime.runtime_genesis_config ||
 		chainSpec.genesis.runtime;
 
-	if (
-		runtimeConfig.parachainsHrmp &&
-		runtimeConfig.parachainsHrmp.preopenHrmpChannels
-	) {
-		runtimeConfig.parachainsHrmp.preopenHrmpChannels.push(newHrmpChannel);
+	let hrmp = undefined;
+
+	if (runtimeConfig.hrmp) {
+		hrmp = runtimeConfig.hrmp;
+	}
+	// For retro-compatibility with substrate pre Polkadot 0.9.5
+	else if (runtimeConfig.parachainsHrmp) {
+		hrmp = runtimeConfig.parachainsHrmp;
+	}
+
+	if (hrmp && hrmp.preopenHrmpChannels) {
+		hrmp.preopenHrmpChannels.push(newHrmpChannel);
 
 		let data = JSON.stringify(chainSpec, null, 2);
 		fs.writeFileSync(spec, data);
 		console.log(
 			`  ✓ Added HRMP channel ${hrmpChannel.sender} -> ${hrmpChannel.recipient}`
 		);
+	} else {
+		console.error("  ⚠ hrmp not found in runtimeConfig");
+		process.exit(1);
 	}
 }
 
@@ -187,4 +216,13 @@ function findAndReplaceConfig(obj1: any, obj2: any) {
 			console.error(`  ⚠ Bad Genesis Configuration [ ${key}: ${obj1[key]} ]`);
 		}
 	});
+}
+
+export async function addBootNodes(spec: any, addresses: any) {
+	let rawdata = fs.readFileSync(spec);
+	let chainSpec = JSON.parse(rawdata);
+	chainSpec.bootNodes = addresses;
+	let data = JSON.stringify(chainSpec, null, 2);
+	fs.writeFileSync(spec, data);
+	console.log(`Added Boot Nodes: ${addresses}`);
 }

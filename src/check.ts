@@ -3,6 +3,7 @@
 import { LaunchConfig } from "./types";
 export function checkConfig(config: LaunchConfig) {
 	if (!config) {
+		console.error("⚠ Missing config");
 		return false;
 	}
 
@@ -59,6 +60,11 @@ export function checkConfig(config: LaunchConfig) {
 				return false;
 			}
 		}
+	}
+
+	// Allow the config to not contain `simpleParachains`
+	if (!config.simpleParachains) {
+		config.simpleParachains = [];
 	}
 
 	return true;

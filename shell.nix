@@ -1,9 +1,7 @@
 { pkgs ? import <nixpkgs> { } }:
-let
-  polkadot-launch = pkgs.callPackage ./default.nix { };
-in
-pkgs.mkShell {
+with pkgs; mkShell {
   buildInputs = [
-    polkadot-launch
+    nodePackages.typescript
+    (yarn.override { nodejs = nodejs-14_x; })
   ];
 }
