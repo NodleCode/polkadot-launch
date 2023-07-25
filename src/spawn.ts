@@ -190,14 +190,18 @@ export async function exportGenesisState(
 // Start a collator node for a parachain.
 export function startCollator(
 	bin: string,
-	wsPort: number,
+	wsPort: number | undefined,
 	rpcPort: number | undefined,
 	port: number,
 	options: CollatorOptions
 ) {
 	return new Promise<void>(function (resolve) {
 		// TODO: Make DB directory configurable rather than just `tmp`
-		let args = ["--ws-port=" + wsPort, "--port=" + port];
+		let args = ["--port=" + port];
+		let process_id = port;
+		if(wsPort){
+			args.push("--ws-port=" + wsPort);
+		}
 		const { basePath, name, onlyOneParachainNode, flags, spec, chain } =
 			options;
 
@@ -253,16 +257,17 @@ export function startCollator(
 			console.log(`Added ${flags_collator} to collator`);
 		}
 		verbose(bin, args);
-		p[wsPort] = spawn(bin, args);
+		p[process_id] = spawn(bin, args);
 
-		let log = fs.createWriteStream(`${wsPort}.log`);
+		let log = fs.createWriteStream(`${process_id}.log`);
 
-		p[wsPort].stdout.pipe(log);
-		p[wsPort].stderr.on("data", function (chunk) {
+		p[process_id].stdout.pipe(log);
+		p[process_id].stderr.on("data", function (chunk) {
 			let message = chunk.toString();
 			let ready =
 				message.includes("Running JSON-RPC WS server:") ||
-				message.includes("Listening for new connections");
+				message.includes("Listening for new connections") ||
+				message.includes("Running JSON-RPC server:");
 			if (ready) {
 				resolve();
 			}
