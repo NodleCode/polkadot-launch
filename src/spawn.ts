@@ -199,7 +199,7 @@ export function startCollator(
 		// TODO: Make DB directory configurable rather than just `tmp`
 		let args = ["--port=" + port];
 		let process_id = port;
-		if(wsPort){
+		if (wsPort) {
 			args.push("--ws-port=" + wsPort);
 		}
 		const { basePath, name, onlyOneParachainNode, flags, spec, chain } =
