@@ -102,8 +102,7 @@ export async function getParachainIdFromSpec(
 export function startNode(
 	bin: string,
 	name: string,
-	wsPort: number,
-	rpcPort: number | undefined,
+    rpcPort: number | undefined,
 	port: number,
 	nodeKey: string,
 	spec: string,
@@ -113,7 +112,6 @@ export function startNode(
 	// TODO: Make DB directory configurable rather than just `tmp`
 	let args = [
 		"--chain=" + spec,
-		"--ws-port=" + wsPort,
 		"--port=" + port,
 		"--node-key=" + nodeKey,
 		"--" + name.toLowerCase(),
