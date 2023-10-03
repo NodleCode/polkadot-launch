@@ -102,7 +102,8 @@ export async function getParachainIdFromSpec(
 export function startNode(
 	bin: string,
 	name: string,
-    rpcPort: number | undefined,
+	wsPort: number | undefined,
+	rpcPort: number | undefined,
 	port: number,
 	nodeKey: string,
 	spec: string,
@@ -116,6 +117,11 @@ export function startNode(
 		"--node-key=" + nodeKey,
 		"--" + name.toLowerCase(),
 	];
+
+	if (wsPort) {
+		args.push("--ws-port=" + wsPort);
+	}
+
 	if (rpcPort) {
 		args.push("--rpc-port=" + rpcPort);
 	}
@@ -190,13 +196,19 @@ export function startCollator(
 	bin: string,
 	wsPort: number | undefined,
 	rpcPort: number | undefined,
-	port: number,
+	port: number | undefined,
 	options: CollatorOptions
 ) {
 	return new Promise<void>(function (resolve) {
 		// TODO: Make DB directory configurable rather than just `tmp`
-		let args = ["--port=" + port];
-		let process_id = port;
+
+		let args = port ? ["--port=" + port] : [];
+
+		let process_id = wsPort ? wsPort : rpcPort ? rpcPort : port ? port : 0;
+		if (process_id === 0) {
+			throw new Error("No port specified");
+		}
+
 		if (wsPort) {
 			args.push("--ws-port=" + wsPort);
 		}
