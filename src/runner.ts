@@ -116,9 +116,16 @@ export async function run(config_dir: string, rawConfig: LaunchConfig) {
 		);
 	}
 
+	const relayChainNode0Port = config.relaychain.nodes[0].rpcPort
+		? config.relaychain.nodes[0].rpcPort
+		: config.relaychain.nodes[0].wsPort;
+	if (!relayChainNode0Port) {
+		throw new Error("No rpcPort or wsPort found for relay chain node 0");
+	}
+
 	// Connect to the first relay chain node to submit the extrinsic.
 	let relayChainApi: ApiPromise = await connect(
-		config.relaychain.nodes[0].wsPort,
+		relayChainNode0Port,
 		loadTypeDef(config.types)
 	);
 
